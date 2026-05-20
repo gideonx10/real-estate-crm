@@ -273,3 +273,83 @@ https://react.dev/link/hydration-mismatch
  GET /dashboard 200 in 267ms (next.js: 14ms, application-code: 253ms)
  GET /api/crm 200 in 1211ms (next.js: 115ms, application-code: 1095ms)
 ✓ Compiled in 1213ms
+ GET / 307 in 1935ms (next.js: 590ms, application-code: 1345ms)
+ GET /dashboard 200 in 597ms (next.js: 224ms, application-code: 373ms)
+[browser] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <HotReload globalError={[...]} webSocket={WebSocket} staticIndicatorState={{pathname:null, ...}}>
+      <AppDevOverlayErrorBoundary globalError={[...]}>
+        <ReplaySsrOnlyErrors>
+        <DevRootHTTPAccessFallbackBoundary>
+          <HTTPAccessFallbackBoundary notFound={<NotAllowedRootHTTPFallbackError>}>
+            <HTTPAccessFallbackErrorBoundary pathname="/dashboard" notFound={<NotAllowedRootHTTPFallbackError>} ...>
+              <RedirectBoundary>
+                <RedirectErrorBoundary router={{...}}>
+                  <Head>
+                  <__next_root_layout_boundary__>
+                    <SegmentViewNode type="layout" pagePath="layout.js">
+                      <SegmentTrieNode>
+                      <link>
+                      <script>
+                      <script>
+                      <script>
+                      <RootLayout>
+                        <html lang="en" className="h-full ant...">
+                          <body
+                            className="min-h-full bg-surface text-zinc-950"
+-                           data-new-gr-c-s-check-loaded="14.1294.0"
+-                           data-gr-ext-installed=""
+                          >
+                  ...
+ 
+ GET /api/crm 200 in 1645ms (next.js: 68ms, application-code: 1577ms)
+ GET /projects 200 in 198ms (next.js: 106ms, application-code: 91ms)
+ GET /api/crm 200 in 349ms (next.js: 10ms, application-code: 340ms)
+ GET /contacts 200 in 175ms (next.js: 82ms, application-code: 93ms)
+ GET /api/crm 200 in 1043ms (next.js: 49ms, application-code: 994ms)
+ GET /api/crm 200 in 361ms (next.js: 13ms, application-code: 347ms)
+ GET /api/crm 200 in 684ms (next.js: 50ms, application-code: 634ms)
+ GET /leads 200 in 152ms (next.js: 78ms, application-code: 74ms)
+ GET /api/crm 200 in 374ms (next.js: 12ms, application-code: 363ms)
+ GET /api/crm 200 in 382ms (next.js: 46ms, application-code: 336ms)
+ GET /projects 200 in 65ms (next.js: 9ms, application-code: 57ms)
+ GET /api/crm 200 in 375ms (next.js: 3ms, application-code: 372ms)
+ GET /api/crm 200 in 398ms (next.js: 5ms, application-code: 393ms)
+ GET /projects/00000000-0000-4000-8000-000000000303 200 in 2.8s (next.js: 2.8s, application-code: 26ms)
+ GET /api/crm 200 in 1144ms (next.js: 7ms, application-code: 1137ms)
+ GET /api/crm 200 in 1155ms (next.js: 61ms, application-code: 1094ms)
+ GET /projects 200 in 32ms (next.js: 5ms, application-code: 27ms)
+ GET /api/crm 200 in 511ms (next.js: 12ms, application-code: 499ms)
+ GET /api/crm 200 in 675ms (next.js: 6ms, application-code: 670ms)
+ GET /contacts 200 in 66ms (next.js: 6ms, application-code: 60ms)
+ GET /api/crm 200 in 551ms (next.js: 9ms, application-code: 543ms)
+ GET /api/crm 200 in 780ms (next.js: 15ms, application-code: 766ms)
+ GET /leads 200 in 45ms (next.js: 5ms, application-code: 40ms)
+ GET /api/crm 200 in 392ms (next.js: 19ms, application-code: 373ms)
+ GET /api/crm 200 in 398ms (next.js: 39ms, application-code: 359ms)
+ GET /dashboard 200 in 101ms (next.js: 16ms, application-code: 85ms)
+ GET /api/crm 200 in 337ms (next.js: 7ms, application-code: 330ms)
+ GET /api/crm 200 in 340ms (next.js: 9ms, application-code: 331ms)
+⚠ Found a change in next.config.mjs. Restarting the server to apply the changes...
+▲ Next.js 16.2.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.56.1:3000
+- Environments: .env.local
+✓ Ready in 627ms
+⨯ Failed to load next.config.mjs, see more info here https://nextjs.org/docs/messages/next-config-error
+Error: Cannot find package '@ducanh2912/next-pwa' imported from C:\ADI\Personal\Projects\2026\realestate-crm\next.config.mjs
+    at ignore-listed frames {
+  code: 'ERR_MODULE_NOT_FOUND'
+}
+[?25h

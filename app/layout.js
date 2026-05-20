@@ -4,6 +4,18 @@ import "./globals.css";
 export const metadata = {
   title: "Real Estate CRM",
   description: "Mobile-first CRM for real estate teams",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    title: "Real Estate CRM",
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
+  },
+};
+
+export const viewport = {
+  themeColor: "#0d1b3e",
 };
 
 export default function RootLayout({ children }) {
