@@ -8,9 +8,12 @@ export const metadata = {
   appleWebApp: {
     capable: true,
     title: "Real Estate CRM",
+    statusBarStyle: "default",
   },
   other: {
     "mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-status-bar-style": "default",
   },
 };
 
