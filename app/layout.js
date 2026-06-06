@@ -1,13 +1,17 @@
-import { BottomNav } from "@/components/ui/BottomNav";
+import { AuthShell } from "@/components/AuthShell";
 import "./globals.css";
 
 export const metadata = {
-  title: "Real Estate CRM",
+  title: "Aakarsh Group CRM",
   description: "Mobile-first CRM for real estate teams",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/icon-192x192.png",
+    apple: "/apple-touch-icon.png",
+  },
   appleWebApp: {
     capable: true,
-    title: "Real Estate CRM",
+    title: "Aakarsh Group CRM",
     statusBarStyle: "default",
   },
   other: {
@@ -18,17 +22,21 @@ export const metadata = {
 };
 
 export const viewport = {
-  themeColor: "#0d1b3e",
+  width: "device-width",
+  initialScale: 1,
+  themeColor: "#ffffff",
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className="h-full antialiased">
-      <body className="min-h-full bg-surface text-zinc-950">
-        <main className="mx-auto min-h-dvh w-full max-w-6xl px-4 pb-28 pt-4 sm:px-6 lg:px-8">
-          {children}
-        </main>
-        <BottomNav />
+    <html lang="en" className="antialiased">
+      <body className="bg-surface text-zinc-950">
+        <AuthShell>
+          <main className="mx-auto min-h-dvh w-full max-w-6xl px-4 pb-28 pt-4 sm:px-6 lg:px-8">
+            {children}
+          </main>
+        </AuthShell>
       </body>
     </html>
   );

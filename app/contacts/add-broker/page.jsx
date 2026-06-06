@@ -12,20 +12,27 @@ import { getInitials } from "@/lib/utils";
 export default function AddBrokerPage() {
   const router = useRouter();
   const [name, setName] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(event) {
     event.preventDefault();
+    if (submitting) return;
+    setSubmitting(true);
     const form = new FormData(event.currentTarget);
-    await createCRMRecord("brokers", {
-      full_name: form.get("full_name"),
-      agency_firm: form.get("agency_firm"),
-      phone: form.get("phone"),
-      email: form.get("email"),
-      commission_rate: Number(form.get("commission_rate") || 0),
-      notes: form.get("notes"),
-    });
-    router.refresh();
-    router.push("/contacts");
+    try {
+      await createCRMRecord("brokers", {
+        full_name: form.get("full_name"),
+        agency_firm: form.get("agency_firm"),
+        phone: form.get("phone"),
+        email: form.get("email"),
+        commission_rate: Number(form.get("commission_rate") || 0),
+        notes: form.get("notes"),
+      });
+      router.refresh();
+      router.push("/contacts");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -53,8 +60,8 @@ export default function AddBrokerPage() {
           <Textarea label="Notes" name="notes" />
         </Card>
 
-        <Button type="submit" size="lg" className="w-full">
-          <Check size={18} /> Add Broker
+        <Button type="submit" size="lg" className="w-full" disabled={submitting}>
+          <Check size={18} /> {submitting ? "Adding Broker..." : "Add Broker"}
         </Button>
       </form>
     </div>

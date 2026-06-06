@@ -64,7 +64,7 @@ export default function ExportPage() {
   return (
     <div className="grid gap-5">
       <section className="rounded-3xl bg-navy p-5 text-white shadow-lg shadow-navy/15">
-        <p className="text-sm font-semibold text-white/70">{data.companies[0]?.name || "Company"}</p>
+        <p className="text-sm font-semibold text-white/70">Aakarsh Group</p>
         <h1 className="mt-1 text-2xl font-bold">Export & Sync</h1>
         <div className="mt-5 grid grid-cols-4 gap-2 text-center">
           <BannerStat label="Builders" value={data.builders.length} />
@@ -84,7 +84,7 @@ export default function ExportPage() {
               <div>
                 <h3 className="font-bold text-navy">{row.label}</h3>
                 <p className="text-sm font-semibold text-zinc-500">
-                  {row.description} · {count} records
+                  {row.description} - {count} records
                 </p>
               </div>
               <div className="flex shrink-0 gap-2">

@@ -1,23 +1,23 @@
 {
-  "name": "Real Estate CRM",
-  "short_name": "CRM",
+  "name": "Aakarsh Group",
+  "short_name": "Aakarsh",
   "description": "Mobile-first CRM for real estate teams",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f1f5f9",
-  "theme_color": "#0d1b3e",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
   "icons": [
     {
-      "src": "/icons/icon-192x192.png",
+      "src": "/icon-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "maskable"
     },
     {
-      "src": "/icons/icon-512x512.png",
+      "src": "/icon-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "maskable"
     }
   ]
 }

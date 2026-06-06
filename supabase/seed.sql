@@ -1,10 +1,20 @@
 INSERT INTO companies (id, name, initials, logo_url, brand_color, created_at) VALUES
-('00000000-0000-4000-8000-000000000001', 'Aakash Group', 'AG', '', '#0D1B3E', NOW() - INTERVAL '30 days')
+('00000000-0000-4000-8000-000000000001', 'Aakarsh Group', 'AG', '/aakarsh-group-logo.png', '#0D1B3E', NOW() - INTERVAL '30 days')
 ON CONFLICT (id) DO UPDATE SET
   name = EXCLUDED.name,
   initials = EXCLUDED.initials,
   logo_url = EXCLUDED.logo_url,
   brand_color = EXCLUDED.brand_color;
+
+INSERT INTO app_users (id, name, username, password, role, is_active, created_at, updated_at) VALUES
+('00000000-0000-4000-8000-000000000701', 'Axay', 'admin@axay', 'axaykhokhar', 'admin', true, NOW(), NOW()),
+('00000000-0000-4000-8000-000000000702', 'Axay2', 'gideonx10', 'jaimataji', 'admin', true, NOW(), NOW())
+ON CONFLICT (username) DO UPDATE SET
+  name = EXCLUDED.name,
+  password = EXCLUDED.password,
+  role = EXCLUDED.role,
+  is_active = EXCLUDED.is_active,
+  updated_at = NOW();
 
 INSERT INTO builders (
   id, company_id, full_name, company_name, legal_name, brand_tagline, brand_color,

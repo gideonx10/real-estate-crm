@@ -1,4 +1,5 @@
 import { Edit3, Phone, Trash2 } from "lucide-react";
+import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { getInitials } from "@/lib/utils";
@@ -25,9 +26,9 @@ export function BuilderCard({ builder, onDelete }) {
         </div>
       </div>
       <div className="mt-4 flex items-center justify-between gap-2">
-        <a className="text-sm font-bold text-gold" href={builder.website || "#"}>
+        <Link className="text-sm font-bold text-gold" href={`/contacts/builders/${builder.id}`}>
           View Brand Page →
-        </a>
+        </Link>
         <div className="flex gap-2">
           <Button aria-label="Call builder" size="icon" variant="secondary" href={`tel:${builder.phone}`}>
             <Phone className="text-success" size={17} />

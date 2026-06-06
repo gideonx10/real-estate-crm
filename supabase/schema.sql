@@ -100,6 +100,80 @@ CREATE TABLE IF NOT EXISTS lead_activities (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS app_users (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name VARCHAR(255) NOT NULL,
+  username VARCHAR(255) UNIQUE NOT NULL,
+  password VARCHAR(255) NOT NULL,
+  role VARCHAR(50) DEFAULT 'admin',
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE OR REPLACE FUNCTION authenticate_app_user(input_username TEXT, input_password TEXT)
+RETURNS TABLE (
+  id UUID,
+  name VARCHAR,
+  username VARCHAR,
+  role VARCHAR,
+  is_active BOOLEAN
+)
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT au.id, au.name, au.username, au.role, au.is_active
+  FROM app_users au
+  WHERE au.username = input_username
+    AND au.password = input_password
+    AND au.is_active = true
+  LIMIT 1;
+$$;
+
+CREATE OR REPLACE FUNCTION get_app_user_profile(input_user_id UUID)
+RETURNS TABLE (
+  id UUID,
+  name VARCHAR,
+  username VARCHAR,
+  role VARCHAR,
+  is_active BOOLEAN,
+  created_at TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ
+)
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT au.id, au.name, au.username, au.role, au.is_active, au.created_at, au.updated_at
+  FROM app_users au
+  WHERE au.id = input_user_id
+    AND au.is_active = true
+  LIMIT 1;
+$$;
+
+CREATE OR REPLACE FUNCTION update_app_user_profile(input_user_id UUID, input_name TEXT)
+RETURNS TABLE (
+  id UUID,
+  name VARCHAR,
+  username VARCHAR,
+  role VARCHAR,
+  is_active BOOLEAN,
+  created_at TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ
+)
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  UPDATE app_users
+  SET name = input_name,
+      updated_at = NOW()
+  WHERE id = input_user_id
+    AND is_active = true
+  RETURNING app_users.id, app_users.name, app_users.username, app_users.role, app_users.is_active, app_users.created_at, app_users.updated_at;
+$$;
+
 CREATE OR REPLACE VIEW project_stats
 WITH (security_invoker = true) AS
 SELECT
@@ -132,6 +206,7 @@ ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE units ENABLE ROW LEVEL SECURITY;
 ALTER TABLE leads ENABLE ROW LEVEL SECURITY;
 ALTER TABLE lead_activities ENABLE ROW LEVEL SECURITY;
+ALTER TABLE app_users ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "v1 public read companies" ON companies;
 DROP POLICY IF EXISTS "v1 public write companies" ON companies;
@@ -147,6 +222,8 @@ DROP POLICY IF EXISTS "v1 public read leads" ON leads;
 DROP POLICY IF EXISTS "v1 public write leads" ON leads;
 DROP POLICY IF EXISTS "v1 public read lead_activities" ON lead_activities;
 DROP POLICY IF EXISTS "v1 public write lead_activities" ON lead_activities;
+DROP POLICY IF EXISTS "v1 public read app_users" ON app_users;
+DROP POLICY IF EXISTS "v1 public write app_users" ON app_users;
 
 CREATE POLICY "v1 public read companies" ON companies FOR SELECT USING (true);
 CREATE POLICY "v1 public write companies" ON companies FOR ALL USING (true) WITH CHECK (true);
@@ -162,3 +239,11 @@ CREATE POLICY "v1 public read leads" ON leads FOR SELECT USING (true);
 CREATE POLICY "v1 public write leads" ON leads FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "v1 public read lead_activities" ON lead_activities FOR SELECT USING (true);
 CREATE POLICY "v1 public write lead_activities" ON lead_activities FOR ALL USING (true) WITH CHECK (true);
+
+REVOKE ALL ON FUNCTION authenticate_app_user(TEXT, TEXT) FROM PUBLIC;
+REVOKE ALL ON FUNCTION get_app_user_profile(UUID) FROM PUBLIC;
+REVOKE ALL ON FUNCTION update_app_user_profile(UUID, TEXT) FROM PUBLIC;
+
+GRANT EXECUTE ON FUNCTION authenticate_app_user(TEXT, TEXT) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION get_app_user_profile(UUID) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION update_app_user_profile(UUID, TEXT) TO anon, authenticated, service_role;

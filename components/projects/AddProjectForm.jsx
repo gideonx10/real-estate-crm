@@ -15,28 +15,35 @@ export function AddProjectForm({ builders = [] }) {
   const router = useRouter();
   const [builderId, setBuilderId] = useState("");
   const [status, setStatus] = useState("Active");
+  const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(event) {
     event.preventDefault();
+    if (submitting) return;
+    setSubmitting(true);
     const form = new FormData(event.currentTarget);
     const amenities = String(form.get("amenities") || "")
       .split(",")
       .map((item) => item.trim())
       .filter(Boolean);
 
-    await createCRMRecord("projects", {
-      name: form.get("name"),
-      location: form.get("location"),
-      description: form.get("description"),
-      builder_id: builderId || null,
-      price_from: Number(form.get("price_from") || 0),
-      price_to: Number(form.get("price_to") || 0),
-      status,
-      amenities,
-      total_units: 0,
-    });
-    router.refresh();
-    router.push("/projects");
+    try {
+      await createCRMRecord("projects", {
+        name: form.get("name"),
+        location: form.get("location"),
+        description: form.get("description"),
+        builder_id: builderId || null,
+        price_from: Number(form.get("price_from") || 0),
+        price_to: Number(form.get("price_to") || 0),
+        status,
+        amenities,
+        total_units: 0,
+      });
+      router.refresh();
+      router.push("/projects");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   const selectedBuilderName = useMemo(
@@ -82,8 +89,8 @@ export function AddProjectForm({ builders = [] }) {
 
         <Input label="Amenities" name="amenities" placeholder="Clubhouse, Pool, Gym" />
       </Card>
-      <Button type="submit" className="w-full" size="lg">
-        <Building2 size={18} /> Add Project
+      <Button type="submit" className="w-full" size="lg" disabled={submitting}>
+        <Building2 size={18} /> {submitting ? "Adding Project..." : "Add Project"}
       </Button>
     </form>
   );

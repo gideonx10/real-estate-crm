@@ -1,10 +1,11 @@
 import { Home } from "lucide-react";
+import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
 import { formatDate, formatPrice, getInitials, sourceTone, statusBorder } from "@/lib/utils";
 
 export function LeadCard({ lead, project }) {
   return (
-    <article className={`rounded-2xl border border-l-4 border-zinc-100 bg-white p-4 shadow-sm ${statusBorder[lead.status] || "border-l-zinc-300"}`}>
+    <Link href={`/leads/${lead.id}`} className={`block rounded-2xl border border-l-4 border-zinc-100 bg-white p-4 shadow-sm transition active:scale-[0.99] ${statusBorder[lead.status] || "border-l-zinc-300"}`}>
       <div className="grid grid-cols-[44px_1fr_auto] gap-3">
         <div className="grid h-11 w-11 place-items-center rounded-full bg-gold text-sm font-bold text-navy">
           {getInitials(lead.full_name)}
@@ -25,6 +26,6 @@ export function LeadCard({ lead, project }) {
           <p className="mt-2 text-sm font-bold text-navy">{formatPrice(lead.budget)}</p>
         </div>
       </div>
-    </article>
+    </Link>
   );
 }

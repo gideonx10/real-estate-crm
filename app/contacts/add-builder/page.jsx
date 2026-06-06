@@ -15,26 +15,33 @@ export default function AddBuilderPage() {
   const router = useRouter();
   const [brandColor, setBrandColor] = useState("#0D1B3E");
   const [logoName, setLogoName] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(event) {
     event.preventDefault();
+    if (submitting) return;
+    setSubmitting(true);
     const form = new FormData(event.currentTarget);
-    await createCRMRecord("builders", {
-      full_name: form.get("full_name"),
-      company_name: form.get("company_name"),
-      legal_name: form.get("legal_name"),
-      brand_tagline: form.get("brand_tagline"),
-      brand_color: brandColor,
-      logo_url: logoName,
-      website: form.get("website"),
-      established_year: Number(form.get("established_year") || 0),
-      phone: form.get("phone"),
-      email: form.get("email"),
-      office_address: form.get("office_address"),
-      notes: form.get("notes"),
-    });
-    router.refresh();
-    router.push("/contacts");
+    try {
+      await createCRMRecord("builders", {
+        full_name: form.get("full_name"),
+        company_name: form.get("company_name"),
+        legal_name: form.get("legal_name"),
+        brand_tagline: form.get("brand_tagline"),
+        brand_color: brandColor,
+        logo_url: logoName,
+        website: form.get("website"),
+        established_year: Number(form.get("established_year") || 0),
+        phone: form.get("phone"),
+        email: form.get("email"),
+        office_address: form.get("office_address"),
+        notes: form.get("notes"),
+      });
+      router.refresh();
+      router.push("/contacts");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -88,8 +95,8 @@ export default function AddBuilderPage() {
           <Textarea label="Notes" name="notes" />
         </Card>
 
-        <Button type="submit" size="lg" className="w-full">
-          <Check size={18} /> Add Builder
+        <Button type="submit" size="lg" className="w-full" disabled={submitting}>
+          <Check size={18} /> {submitting ? "Adding Builder..." : "Add Builder"}
         </Button>
       </form>
     </div>
