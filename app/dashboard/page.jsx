@@ -57,7 +57,7 @@ function DashboardMobile({ data, companyName, metrics, recentLeads }) {
           </div>
           <div className="min-w-0">
             <p className="truncate text-sm text-white/70">Welcome to {companyName}</p>
-            <h1 className="text-[1.65rem] font-bold leading-tight">Aakarsh Group CRM</h1>
+            <h1 className="text-[1.65rem] font-bold leading-tight">Aakarsh Group</h1>
           </div>
         </div>
         <div className="mt-5 grid grid-cols-3 gap-2 text-center">
