@@ -1,11 +1,14 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Check, UserCircle } from "lucide-react";
+import { ArrowLeft, Check, Trash2, UploadCloud, UserCircle } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Input } from "@/components/ui/Input";
+import { deleteUserAvatar, uploadUserAvatar } from "@/app/actions/cloudinary";
 
 export default function ProfilePage() {
   const { update } = useSession();
@@ -13,10 +16,21 @@ export default function ProfilePage() {
   const [name, setName] = useState("");
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [confirmDeleteAvatar, setConfirmDeleteAvatar] = useState(false);
+
+  async function loadProfile() {
+    const response = await fetch("/api/me", { cache: "no-store" });
+    const result = await response.json();
+    if (response.ok && result.data) {
+      setProfile(result.data);
+      setName(result.data.name || "");
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
-    async function loadProfile() {
+    async function load() {
       const response = await fetch("/api/me", { cache: "no-store" });
       const result = await response.json();
       if (!cancelled && response.ok) {
@@ -24,7 +38,7 @@ export default function ProfilePage() {
         setName(result.data.name || "");
       }
     }
-    loadProfile();
+    load();
     return () => {
       cancelled = true;
     };
@@ -52,6 +66,48 @@ export default function ProfilePage() {
     }
   }
 
+  async function handleAvatarChange(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setUploadingAvatar(true);
+    setMessage("");
+    try {
+      const formData = new FormData();
+      formData.set("file", file);
+      const result = await uploadUserAvatar(formData);
+      if (!result.ok) throw new Error(result.error || "Unable to upload avatar");
+      // Re-fetch profile to get fresh data from database
+      await loadProfile();
+      setMessage("Profile photo updated.");
+    } catch (error) {
+      setMessage(error.message);
+    } finally {
+      setUploadingAvatar(false);
+      event.target.value = "";
+    }
+  }
+
+  async function handleAvatarDelete() {
+    if (!profile?.avatar_public_id) return;
+    setUploadingAvatar(true);
+    setMessage("");
+    setConfirmDeleteAvatar(false);
+    try {
+      const formData = new FormData();
+      formData.set("publicId", profile.avatar_public_id);
+      const result = await deleteUserAvatar(formData);
+      if (!result.ok) throw new Error(result.error || "Unable to delete avatar");
+      // Re-fetch profile to get fresh data from database
+      await loadProfile();
+      setMessage("Profile photo removed.");
+    } catch (error) {
+      setMessage(error.message);
+    } finally {
+      setUploadingAvatar(false);
+    }
+  }
+
   return (
     <div className="grid gap-5">
       <header className="flex items-center gap-3">
@@ -65,8 +121,25 @@ export default function ProfilePage() {
       </header>
 
       <Card className="grid gap-5 p-6">
-        <div className="mx-auto grid h-24 w-24 place-items-center rounded-full bg-navy/10 text-navy">
-          <UserCircle size={54} />
+        <div className="mx-auto grid justify-items-center gap-3">
+          <div className="relative grid h-24 w-24 place-items-center overflow-hidden rounded-full bg-navy/10 text-navy">
+            {profile?.avatar_url ? (
+              <Image src={profile.avatar_url} alt="Profile photo" fill sizes="96px" unoptimized className="object-cover" />
+            ) : (
+              <UserCircle size={54} />
+            )}
+          </div>
+          <div className="flex flex-wrap justify-center gap-2">
+            <label className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl bg-white px-3 text-sm font-semibold text-navy ring-1 ring-zinc-200 hover:bg-zinc-50">
+              <UploadCloud size={16} /> {uploadingAvatar ? "Uploading..." : "Upload Photo"}
+              <input className="sr-only" type="file" accept="image/jpeg,image/png,image/webp" onChange={handleAvatarChange} disabled={uploadingAvatar} />
+            </label>
+            {profile?.avatar_public_id ? (
+              <Button type="button" size="sm" variant="danger" onClick={() => setConfirmDeleteAvatar(true)} disabled={uploadingAvatar}>
+                <Trash2 size={16} /> Remove
+              </Button>
+            ) : null}
+          </div>
         </div>
         <form onSubmit={handleSubmit} className="grid gap-4">
           <Input label="Name" value={name} onChange={(event) => setName(event.target.value)} required />
@@ -78,6 +151,14 @@ export default function ProfilePage() {
           </Button>
         </form>
       </Card>
+
+      <ConfirmDialog
+        open={confirmDeleteAvatar}
+        message={`Are you sure you want to delete your profile photo?`}
+        onConfirm={handleAvatarDelete}
+        onCancel={() => setConfirmDeleteAvatar(false)}
+      />
     </div>
   );
 }
+

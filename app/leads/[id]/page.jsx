@@ -7,6 +7,7 @@ import { ArrowLeft, Banknote, Home, MapPin, Phone, Tag, Trash2 } from "lucide-re
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { deleteCRMRecord, updateCRMRecord } from "@/lib/crm-client";
 import { useCRMData } from "@/lib/use-crm-data";
 import { cn, formatDate, formatPrice, getInitials, statusButtonTone, statusTone } from "@/lib/utils";
@@ -18,6 +19,7 @@ export default function LeadDetailPage() {
   const router = useRouter();
   const data = useCRMData();
   const [updating, setUpdating] = useState(false);
+  const [confirmDeleteLead, setConfirmDeleteLead] = useState(false);
 
   const lead = useMemo(() => data?.leads.find((item) => item.id === id), [data, id]);
   const project = useMemo(
@@ -47,6 +49,7 @@ export default function LeadDetailPage() {
 
   async function deleteLead() {
     if (updating) return;
+    setConfirmDeleteLead(false);
     setUpdating(true);
     try {
       await deleteCRMRecord("leads", lead.id);
@@ -60,13 +63,19 @@ export default function LeadDetailPage() {
 
   return (
     <>
-      <LeadDetailMobile {...pageProps} />
-      <LeadDetailDesktop {...pageProps} />
+      <LeadDetailMobile {...pageProps} onRequestDelete={() => setConfirmDeleteLead(true)} />
+      <LeadDetailDesktop {...pageProps} onRequestDelete={() => setConfirmDeleteLead(true)} />
+      <ConfirmDialog
+        open={confirmDeleteLead}
+        message={`Are you sure you want to delete "${lead.full_name}"?`}
+        onConfirm={deleteLead}
+        onCancel={() => setConfirmDeleteLead(false)}
+      />
     </>
   );
 }
 
-function LeadDetailMobile({ lead, project, updating, updateStatus, deleteLead }) {
+function LeadDetailMobile({ lead, project, updating, updateStatus, deleteLead, onRequestDelete }) {
   return (
     <div className="grid w-full max-w-full gap-5 md:hidden">
       <header className="sticky top-0 z-20 -mx-4 grid grid-cols-[auto_1fr] items-center gap-3 border-b border-zinc-200 bg-white/95 px-4 py-3 backdrop-blur">
@@ -76,14 +85,14 @@ function LeadDetailMobile({ lead, project, updating, updateStatus, deleteLead })
         <h1 className="min-w-0 truncate text-base font-bold text-navy">{lead.full_name}</h1>
       </header>
 
-      <LeadHeroCard lead={lead} deleteLead={deleteLead} />
+      <LeadHeroCard lead={lead} onRequestDelete={onRequestDelete} />
       <StatusCard lead={lead} updating={updating} updateStatus={updateStatus} />
       <LeadDetailsCard lead={lead} project={project} />
     </div>
   );
 }
 
-function LeadDetailDesktop({ lead, project, updating, updateStatus, deleteLead }) {
+function LeadDetailDesktop({ lead, project, updating, updateStatus, deleteLead, onRequestDelete }) {
   return (
     <div className="hidden gap-6 md:grid">
       <header className="flex items-center justify-between">
@@ -95,7 +104,7 @@ function LeadDetailDesktop({ lead, project, updating, updateStatus, deleteLead }
       </header>
 
       <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-        <LeadHeroCard lead={lead} deleteLead={deleteLead} />
+        <LeadHeroCard lead={lead} onRequestDelete={onRequestDelete} />
         <LeadDetailsCard lead={lead} project={project} />
       </div>
       <StatusCard lead={lead} updating={updating} updateStatus={updateStatus} />
@@ -103,15 +112,15 @@ function LeadDetailDesktop({ lead, project, updating, updateStatus, deleteLead }
   );
 }
 
-function LeadHeroCard({ lead, deleteLead }) {
+function LeadHeroCard({ lead, onRequestDelete }) {
   const lost = lead.status === "Lost";
   const avatarTone = statusButtonTone[lead.status]?.avatar || "bg-zinc-100 text-zinc-700";
 
   return (
     <Card className="grid w-full max-w-full justify-items-center gap-4 p-5 text-center">
-      {lead.photo_url ? (
+      {lead.avatar_url || lead.photo_url ? (
         <div className="relative h-32 w-32 overflow-hidden rounded-full bg-zinc-100">
-          <Image src={lead.photo_url} alt={`${lead.full_name} photo`} fill sizes="128px" className="object-cover" />
+          <Image src={lead.avatar_url || lead.photo_url} alt={`${lead.full_name} photo`} fill sizes="128px" unoptimized className="object-cover" />
         </div>
       ) : (
         <div className={cn("grid h-28 w-28 place-items-center rounded-full text-3xl font-bold", lost ? "bg-red-100 text-red-600" : avatarTone)}>
@@ -131,7 +140,7 @@ function LeadHeroCard({ lead, deleteLead }) {
         <Action href={`tel:${lead.phone}`} label="Call" icon={Phone} tone="success" />
         <button
           type="button"
-          onClick={deleteLead}
+          onClick={onRequestDelete}
           className="grid min-h-20 min-w-20 place-items-center rounded-2xl bg-red-50 px-4 text-sm font-bold text-red-600"
         >
           <Trash2 size={24} />

@@ -48,6 +48,8 @@ CREATE TABLE IF NOT EXISTS projects (
   description TEXT,
   price_from BIGINT,
   price_to BIGINT,
+  brochure_url TEXT,
+  brochure_public_id TEXT,
   status VARCHAR(20) DEFAULT 'Active' CHECK (status IN ('Active', 'Upcoming', 'Completed')),
   amenities TEXT[],
   total_units INT DEFAULT 0,
@@ -62,7 +64,7 @@ CREATE TABLE IF NOT EXISTS units (
   floor INT,
   area_sqft DECIMAL(10,2),
   price BIGINT,
-  status VARCHAR(20) DEFAULT 'Available' CHECK (status IN ('Available', 'Sold', 'Reserved')),
+  status VARCHAR(30) DEFAULT 'Available' CHECK (status IN ('Available', 'Under Negotiation', 'Sold', 'Reserved')),
   buyer_lead_id UUID,
   notes TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -82,6 +84,8 @@ CREATE TABLE IF NOT EXISTS leads (
   status VARCHAR(20) DEFAULT 'New' CHECK (status IN ('New', 'Contacted', 'Site Visit', 'Converted', 'Lost')),
   notes TEXT,
   photo_url TEXT,
+  avatar_url TEXT,
+  avatar_public_id TEXT,
   latitude DECIMAL(10,7),
   longitude DECIMAL(10,7),
   location_address TEXT,
@@ -100,6 +104,16 @@ CREATE TABLE IF NOT EXISTS lead_activities (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS project_price_history (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
+  price_from BIGINT NOT NULL,
+  price_to BIGINT NOT NULL,
+  note TEXT,
+  effective_date TIMESTAMPTZ DEFAULT NOW(),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS app_users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name VARCHAR(255) NOT NULL,
@@ -107,6 +121,8 @@ CREATE TABLE IF NOT EXISTS app_users (
   password VARCHAR(255) NOT NULL,
   role VARCHAR(50) DEFAULT 'admin',
   is_active BOOLEAN DEFAULT true,
+  avatar_url TEXT,
+  avatar_public_id TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -138,6 +154,8 @@ RETURNS TABLE (
   username VARCHAR,
   role VARCHAR,
   is_active BOOLEAN,
+  avatar_url TEXT,
+  avatar_public_id TEXT,
   created_at TIMESTAMPTZ,
   updated_at TIMESTAMPTZ
 )
@@ -145,7 +163,7 @@ LANGUAGE sql
 SECURITY DEFINER
 SET search_path = public
 AS $$
-  SELECT au.id, au.name, au.username, au.role, au.is_active, au.created_at, au.updated_at
+  SELECT au.id, au.name, au.username, au.role, au.is_active, au.avatar_url, au.avatar_public_id, au.created_at, au.updated_at
   FROM app_users au
   WHERE au.id = input_user_id
     AND au.is_active = true
@@ -159,6 +177,8 @@ RETURNS TABLE (
   username VARCHAR,
   role VARCHAR,
   is_active BOOLEAN,
+  avatar_url TEXT,
+  avatar_public_id TEXT,
   created_at TIMESTAMPTZ,
   updated_at TIMESTAMPTZ
 )
@@ -171,7 +191,7 @@ AS $$
       updated_at = NOW()
   WHERE id = input_user_id
     AND is_active = true
-  RETURNING app_users.id, app_users.name, app_users.username, app_users.role, app_users.is_active, app_users.created_at, app_users.updated_at;
+  RETURNING app_users.id, app_users.name, app_users.username, app_users.role, app_users.is_active, app_users.avatar_url, app_users.avatar_public_id, app_users.created_at, app_users.updated_at;
 $$;
 
 CREATE OR REPLACE VIEW project_stats
@@ -182,6 +202,7 @@ SELECT
   p.status,
   p.total_units,
   COUNT(u.id) FILTER (WHERE u.status = 'Available') AS available_units,
+  COUNT(u.id) FILTER (WHERE u.status = 'Under Negotiation') AS under_negotiation_units,
   COUNT(u.id) FILTER (WHERE u.status = 'Sold') AS sold_units,
   COUNT(u.id) FILTER (WHERE u.status = 'Reserved') AS reserved_units,
   ROUND(COUNT(u.id) FILTER (WHERE u.status = 'Sold') * 100.0 / NULLIF(p.total_units, 0), 0) AS percent_sold
@@ -206,6 +227,7 @@ ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE units ENABLE ROW LEVEL SECURITY;
 ALTER TABLE leads ENABLE ROW LEVEL SECURITY;
 ALTER TABLE lead_activities ENABLE ROW LEVEL SECURITY;
+ALTER TABLE project_price_history ENABLE ROW LEVEL SECURITY;
 ALTER TABLE app_users ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "v1 public read companies" ON companies;
@@ -222,6 +244,8 @@ DROP POLICY IF EXISTS "v1 public read leads" ON leads;
 DROP POLICY IF EXISTS "v1 public write leads" ON leads;
 DROP POLICY IF EXISTS "v1 public read lead_activities" ON lead_activities;
 DROP POLICY IF EXISTS "v1 public write lead_activities" ON lead_activities;
+DROP POLICY IF EXISTS "v1 public read project_price_history" ON project_price_history;
+DROP POLICY IF EXISTS "v1 public write project_price_history" ON project_price_history;
 DROP POLICY IF EXISTS "v1 public read app_users" ON app_users;
 DROP POLICY IF EXISTS "v1 public write app_users" ON app_users;
 
@@ -239,6 +263,8 @@ CREATE POLICY "v1 public read leads" ON leads FOR SELECT USING (true);
 CREATE POLICY "v1 public write leads" ON leads FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "v1 public read lead_activities" ON lead_activities FOR SELECT USING (true);
 CREATE POLICY "v1 public write lead_activities" ON lead_activities FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "v1 public read project_price_history" ON project_price_history FOR SELECT USING (true);
+CREATE POLICY "v1 public write project_price_history" ON project_price_history FOR ALL USING (true) WITH CHECK (true);
 
 REVOKE ALL ON FUNCTION authenticate_app_user(TEXT, TEXT) FROM PUBLIC;
 REVOKE ALL ON FUNCTION get_app_user_profile(UUID) FROM PUBLIC;

@@ -1,0 +1,7 @@
+export const CLOUDINARY_ROOT_FOLDER = "Aakarsh CRM";
+
+export const CLOUDINARY_FOLDERS = {
+  USER_AVATARS: `${CLOUDINARY_ROOT_FOLDER}/Avatars/users`,
+  LEAD_AVATARS: `${CLOUDINARY_ROOT_FOLDER}/Avatars/leads`,
+  PROJECT_BROCHURES: `${CLOUDINARY_ROOT_FOLDER}/Brochures/projects`,
+};

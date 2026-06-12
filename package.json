@@ -12,6 +12,7 @@
     "@ducanh2912/next-pwa": "^10.2.9",
     "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.106.1",
+    "cloudinary": "^2.10.0",
     "date-fns": "^4.2.1",
     "leaflet": "^1.9.4",
     "lucide-react": "^1.16.0",

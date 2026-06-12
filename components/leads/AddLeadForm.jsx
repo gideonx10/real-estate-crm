@@ -8,6 +8,7 @@ import { Camera, Check, LocateFixed, MapPin, UploadCloud } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input, Textarea } from "@/components/ui/Input";
+import { uploadLeadAvatar } from "@/app/actions/cloudinary";
 import { createCRMRecord } from "@/lib/crm-client";
 import { cn } from "@/lib/utils";
 
@@ -28,7 +29,7 @@ export function AddLeadForm({ projects = [] }) {
   const [status, setStatus] = useState("New");
   const [projectId, setProjectId] = useState("");
   const [photoName, setPhotoName] = useState("");
-  const [photoUrl, setPhotoUrl] = useState("");
+  const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState("");
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [uploadError, setUploadError] = useState("");
@@ -87,38 +88,9 @@ export function AddLeadForm({ projects = [] }) {
     if (!file) return;
 
     setPhotoName(file.name);
-    setPhotoUrl("");
+    setPhotoFile(file);
     setUploadError("");
     setPhotoPreview(URL.createObjectURL(file));
-
-    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
-    if (!cloudName || !uploadPreset) {
-      setUploadError("Cloudinary is not configured yet.");
-      return;
-    }
-
-    setUploadingPhoto(true);
-    try {
-      const uploadForm = new FormData();
-      uploadForm.append("file", file);
-      uploadForm.append("upload_preset", uploadPreset);
-
-      const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
-        method: "POST",
-        body: uploadForm,
-      });
-      const result = await response.json();
-      if (!response.ok) {
-        throw new Error(result?.error?.message || "Photo upload failed");
-      }
-      setPhotoUrl(result.secure_url);
-      setPhotoPreview(result.secure_url);
-    } catch (error) {
-      setUploadError(error.message || "Photo upload failed");
-    } finally {
-      setUploadingPhoto(false);
-    }
   }
 
   async function handleSubmit(event) {
@@ -130,7 +102,7 @@ export function AddLeadForm({ projects = [] }) {
     const phone = String(form.get("phone") || "").trim();
 
     try {
-      await createCRMRecord("leads", {
+      const lead = await createCRMRecord("leads", {
         full_name: form.get("full_name"),
         phone: phone.startsWith("+91") ? phone : `+91 ${phone}`,
         email: form.get("email"),
@@ -140,15 +112,26 @@ export function AddLeadForm({ projects = [] }) {
         interested_project_id: projectId || null,
         status,
         notes: form.get("notes"),
-        photo_url: photoUrl,
+        photo_url: "",
         latitude: coords?.latitude || null,
         longitude: coords?.longitude || null,
         location_address: coords ? `${coords.latitude}, ${coords.longitude}` : "",
       });
+      if (photoFile) {
+        setUploadingPhoto(true);
+        const uploadForm = new FormData();
+        uploadForm.set("leadId", lead.id);
+        uploadForm.set("file", photoFile);
+        const upload = await uploadLeadAvatar(uploadForm);
+        if (!upload.ok) throw new Error(upload.error || "Lead photo upload failed");
+      }
       window.sessionStorage.removeItem(locationCacheKey);
       router.refresh();
       router.push("/leads");
+    } catch (error) {
+      setUploadError(error.message || "Unable to add lead");
     } finally {
+      setUploadingPhoto(false);
       setSubmitting(false);
     }
   }
@@ -168,7 +151,7 @@ export function AddLeadForm({ projects = [] }) {
             <span className="max-w-full truncate">
               {uploadingPhoto ? "Uploading photo..." : photoName || "Capture / upload photo"}
             </span>
-            {photoUrl ? <span className="text-xs text-success">Photo ready</span> : null}
+            {photoFile ? <span className="text-xs text-success">Photo ready</span> : null}
             {uploadError ? <span className="text-xs text-red-600">{uploadError}</span> : null}
             <input
               className="sr-only"
