@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { ArrowLeft, Calendar, Edit3, Globe, Mail, MapPin, Phone, Plus } from "lucide-react";
@@ -12,6 +13,10 @@ import { useCRMData } from "@/lib/use-crm-data";
 import { cn, getInitials, projectMetrics } from "@/lib/utils";
 
 const tabs = ["All", "Active", "Upcoming", "Completed"];
+const LocationPicker = dynamic(
+  () => import("@/components/maps/LocationPicker").then((module) => module.LocationPicker),
+  { ssr: false, loading: () => <div className="h-56 animate-pulse rounded-xl bg-zinc-100" /> }
+);
 
 export default function BuilderProfilePage() {
   const { id } = useParams();
@@ -19,6 +24,7 @@ export default function BuilderProfilePage() {
   const [tab, setTab] = useState("All");
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [coords, setCoords] = useState(null);
 
   const builder = useMemo(() => data?.builders.find((item) => item.id === id), [data, id]);
   const projects = useMemo(() => {
@@ -40,6 +46,11 @@ export default function BuilderProfilePage() {
   const activeCount = allBuilderProjects.filter((project) => project.status === "Active").length;
   const completedCount = allBuilderProjects.filter((project) => project.status === "Completed").length;
   const soldUnits = allBuilderProjects.reduce((sum, project) => sum + projectMetrics(project, data.units).sold, 0);
+  const builderCoords =
+    coords ||
+    (builder.latitude != null && builder.longitude != null
+      ? { latitude: Number(builder.latitude), longitude: Number(builder.longitude) }
+      : null);
 
   async function handleSave(event) {
     event.preventDefault();
@@ -55,6 +66,8 @@ export default function BuilderProfilePage() {
         phone: form.get("phone"),
         email: form.get("email"),
         website: form.get("website"),
+        latitude: builderCoords?.latitude || null,
+        longitude: builderCoords?.longitude || null,
         notes: form.get("notes"),
       });
       setEditing(false);
@@ -133,6 +146,11 @@ export default function BuilderProfilePage() {
             <Input label="Phone" name="phone" defaultValue={builder.phone || ""} required />
             <Input label="Email" name="email" defaultValue={builder.email || ""} />
             <Input label="Website" name="website" defaultValue={builder.website || ""} />
+            <div className="grid gap-2">
+              <span className="text-sm font-semibold text-zinc-700">Map Position</span>
+              <LocationPicker coords={builderCoords} onChange={setCoords} className="h-56" />
+              <p className="text-xs font-semibold text-zinc-500">Tap the map to set or correct this builder location.</p>
+            </div>
             <Textarea label="Notes" name="notes" defaultValue={builder.notes || ""} />
             <Button type="submit" disabled={saving}>{saving ? "Saving..." : "Save Details"}</Button>
           </form>

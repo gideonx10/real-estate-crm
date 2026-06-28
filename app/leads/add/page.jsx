@@ -19,7 +19,7 @@ export default function AddLeadPage() {
           <p className="text-sm font-semibold text-zinc-500">Capture enquiry details with GPS</p>
         </div>
       </header>
-      <AddLeadForm projects={data?.projects || []} />
+      <AddLeadForm projects={data?.projects || []} builders={data?.builders || []} />
     </div>
   );
 }

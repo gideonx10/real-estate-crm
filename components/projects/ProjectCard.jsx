@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { MapPin } from "lucide-react";
+import { Edit3, MapPin, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { formatPrice, projectMetrics } from "@/lib/utils";
 
@@ -10,7 +11,7 @@ const statusBar = {
   Completed: "bg-zinc-400",
 };
 
-export function ProjectCard({ project, builder, units = [] }) {
+export function ProjectCard({ project, builder, units = [], onEdit, onDelete }) {
   const metrics = projectMetrics(project, units);
 
   return (
@@ -45,9 +46,39 @@ export function ProjectCard({ project, builder, units = [] }) {
           <Metric label="Reserved" value={metrics.reserved} className="text-warning" />
         </div>
 
-        <Link href={`/projects/${project.id}`} className="mt-4 inline-flex font-bold text-gold">
-          View →
-        </Link>
+        <div className="mt-4 flex min-h-10 items-center justify-between gap-3">
+          <Link href={`/projects/${project.id}`} className="inline-flex font-bold text-gold">
+            View
+          </Link>
+          {onEdit || onDelete ? (
+            <div className="flex gap-2">
+              {onEdit ? (
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="secondary"
+                  aria-label={`Edit ${project.name}`}
+                  title="Edit project"
+                  onClick={() => onEdit(project)}
+                >
+                  <Edit3 size={17} />
+                </Button>
+              ) : null}
+              {onDelete ? (
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="danger"
+                  aria-label={`Delete ${project.name}`}
+                  title="Delete project"
+                  onClick={() => onDelete(project)}
+                >
+                  <Trash2 size={17} />
+                </Button>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
       </div>
     </Card>
   );

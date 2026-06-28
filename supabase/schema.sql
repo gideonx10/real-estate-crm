@@ -23,6 +23,8 @@ CREATE TABLE IF NOT EXISTS builders (
   phone VARCHAR(20) NOT NULL,
   email VARCHAR(255),
   office_address TEXT,
+  latitude DECIMAL(10,7),
+  longitude DECIMAL(10,7),
   notes TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -53,6 +55,8 @@ CREATE TABLE IF NOT EXISTS projects (
   status VARCHAR(20) DEFAULT 'Active' CHECK (status IN ('Active', 'Upcoming', 'Completed')),
   amenities TEXT[],
   total_units INT DEFAULT 0,
+  latitude DECIMAL(10,7),
+  longitude DECIMAL(10,7),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );

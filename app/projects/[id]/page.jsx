@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useParams } from "next/navigation";
-import { ArrowLeft, Check, Edit3, ExternalLink, FileText, Home, MapPin, Plus, RefreshCw, Trash2, TrendingUp, UploadCloud } from "lucide-react";
+import { ArrowLeft, Check, Download, Edit3, ExternalLink, FileText, Home, MapPin, Plus, RefreshCw, Trash2, TrendingUp } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -29,6 +29,7 @@ export default function ProjectDetailPage() {
   const [uploadingBrochure, setUploadingBrochure] = useState(false);
   const [confirmDeleteUnit, setConfirmDeleteUnit] = useState(null);
   const [confirmDeleteBrochureId, setConfirmDeleteBrochureId] = useState(null);
+  const [pendingBrochureFile, setPendingBrochureFile] = useState(null);
 
   const project = useMemo(() => data?.projects.find((item) => item.id === id), [data, id]);
   const builder = useMemo(() => data?.builders.find((item) => item.id === project?.builder_id), [data, project]);
@@ -147,24 +148,31 @@ export default function ProjectDetailPage() {
     }
   }
 
-  async function handleBrochureAdd(event) {
+  function handleBrochureSelect(event) {
     const file = event.target.files?.[0];
     if (!file) return;
+    setBrochureMessage("");
+    setPendingBrochureFile(file);
+    event.target.value = "";
+  }
+
+  async function handleBrochureUpload() {
+    if (!pendingBrochureFile || uploadingBrochure) return;
     setUploadingBrochure(true);
     setBrochureMessage("");
     try {
       const formData = new FormData();
       formData.set("projectId", project.id);
-      formData.set("file", file);
+      formData.set("file", pendingBrochureFile);
       const result = await uploadProjectBrochure(formData);
       if (!result.ok) throw new Error(result.error || "Unable to upload brochure");
       window.dispatchEvent(new CustomEvent("crm-data-changed"));
+      setPendingBrochureFile(null);
       setBrochureMessage("Brochure uploaded.");
     } catch (error) {
       setBrochureMessage(error.message || "Unable to upload brochure");
     } finally {
       setUploadingBrochure(false);
-      event.target.value = "";
     }
   }
 
@@ -206,7 +214,7 @@ export default function ProjectDetailPage() {
         brochures={brochures}
         message={brochureMessage}
         uploading={uploadingBrochure}
-        onAdd={handleBrochureAdd}
+        onAdd={handleBrochureSelect}
         onDelete={(brochureId) => setConfirmDeleteBrochureId(brochureId)}
       />
       <PriceHistorySection project={project} priceHistory={priceHistory} onUpdate={() => setPriceOpen(true)} />
@@ -277,6 +285,21 @@ export default function ProjectDetailPage() {
         message={`Are you sure you want to delete "${brochureToDelete?.name || "this brochure"}"?`}
         onConfirm={() => handleBrochureDelete(brochureToDelete)}
         onCancel={() => setConfirmDeleteBrochureId(null)}
+        confirming={uploadingBrochure}
+        confirmLabel="Delete"
+        confirmingLabel="Deleting..."
+      />
+
+      <ConfirmDialog
+        open={!!pendingBrochureFile}
+        title="Upload Brochure"
+        message={`Upload "${pendingBrochureFile?.name || "this PDF"}" to ${project.name}?`}
+        onConfirm={handleBrochureUpload}
+        onCancel={() => !uploadingBrochure && setPendingBrochureFile(null)}
+        confirming={uploadingBrochure}
+        confirmLabel="Upload"
+        confirmingLabel="Uploading..."
+        confirmVariant="primary"
       />
     </div>
   );
@@ -291,7 +314,7 @@ function BrochureSection({ brochures, message, uploading, onAdd, onDelete }) {
         </h2>
         <label className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-xl bg-navy px-4 text-sm font-semibold text-white transition-colors hover:bg-navy/90">
           <Plus size={17} /> {uploading ? "Uploading..." : "Add Brochure"}
-          <input className="sr-only" type="file" accept="application/pdf" onChange={onAdd} disabled={uploading} />
+          <input className="sr-only" type="file" accept="application/pdf,.pdf" onChange={onAdd} disabled={uploading} />
         </label>
       </div>
       <Card>
@@ -308,9 +331,12 @@ function BrochureSection({ brochures, message, uploading, onAdd, onDelete }) {
                     <p className="truncate text-xs font-semibold text-zinc-400">{formatCalendarDate(brochure.created_at)}</p>
                   </div>
                 </div>
-                <div className="flex shrink-0 gap-2">
-                  <a href={brochure.url} target="_blank" rel="noopener noreferrer" className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-white text-navy ring-1 ring-zinc-200 hover:bg-zinc-50 h-11 px-4 text-sm font-semibold transition-colors">
+                <div className="grid w-full shrink-0 grid-cols-[1fr_auto_auto] gap-2 sm:w-auto">
+                  <a href={`/api/project-brochures/${brochure.id}/file`} target="_blank" rel="noopener noreferrer" className="inline-flex min-w-0 items-center justify-center gap-2 rounded-xl bg-white text-navy ring-1 ring-zinc-200 hover:bg-zinc-50 h-11 px-4 text-sm font-semibold transition-colors">
                     <ExternalLink size={16} /> Open
+                  </a>
+                  <a href={`/api/project-brochures/${brochure.id}/file?download=1`} className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-white text-navy ring-1 ring-zinc-200 hover:bg-zinc-50" aria-label={`Download ${brochure.name}`}>
+                    <Download size={16} />
                   </a>
                   <Button type="button" variant="danger" size="icon" aria-label={`Delete ${brochure.name}`} onClick={() => onDelete(brochure.id)} disabled={uploading}>
                     <Trash2 size={17} />
@@ -542,4 +568,3 @@ function DetailMetric({ label, value, className = "text-navy" }) {
     </div>
   );
 }
-

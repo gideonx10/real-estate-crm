@@ -2,12 +2,15 @@
 
 import dynamic from "next/dynamic";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Camera, Check, LocateFixed, MapPin, UploadCloud } from "lucide-react";
+import { Building2, Camera, Check, FolderPlus, LocateFixed, MapPin, UploadCloud } from "lucide-react";
+import { QuickBuilderForm } from "@/components/contacts/QuickBuilderForm";
+import { QuickProjectForm } from "@/components/projects/QuickProjectForm";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input, Textarea } from "@/components/ui/Input";
+import { Modal } from "@/components/ui/Modal";
 import { uploadLeadAvatar } from "@/app/actions/cloudinary";
 import { createCRMRecord } from "@/lib/crm-client";
 import { cn } from "@/lib/utils";
@@ -23,11 +26,16 @@ const LeadLocationPicker = dynamic(
   }
 );
 
-export function AddLeadForm({ projects = [] }) {
+export function AddLeadForm({ projects = [], builders = [] }) {
   const router = useRouter();
   const [source, setSource] = useState("Walk-in");
   const [status, setStatus] = useState("New");
   const [projectId, setProjectId] = useState("");
+  const [addedProjects, setAddedProjects] = useState([]);
+  const [addedBuilders, setAddedBuilders] = useState([]);
+  const [builderModalOpen, setBuilderModalOpen] = useState(false);
+  const [projectModalOpen, setProjectModalOpen] = useState(false);
+  const [preferredBuilderId, setPreferredBuilderId] = useState("");
   const [photoName, setPhotoName] = useState("");
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState("");
@@ -36,6 +44,20 @@ export function AddLeadForm({ projects = [] }) {
   const [coords, setCoords] = useState(null);
   const [gpsStatus, setGpsStatus] = useState("Location permission needed");
   const [submitting, setSubmitting] = useState(false);
+
+  const availableProjects = useMemo(() => {
+    const records = new Map();
+    [...projects, ...addedProjects].forEach((project) => records.set(project.id, project));
+    return [...records.values()].sort((a, b) => String(a.name).localeCompare(String(b.name)));
+  }, [addedProjects, projects]);
+
+  const availableBuilders = useMemo(() => {
+    const records = new Map();
+    [...builders, ...addedBuilders].forEach((builder) => records.set(builder.id, builder));
+    return [...records.values()].sort((a, b) =>
+      String(a.company_name || a.full_name).localeCompare(String(b.company_name || b.full_name))
+    );
+  }, [addedBuilders, builders]);
 
   useEffect(() => {
     const cached = readCachedLocation();
@@ -136,9 +158,23 @@ export function AddLeadForm({ projects = [] }) {
     }
   }
 
+  function handleBuilderCreated(builder) {
+    setAddedBuilders((current) => [...current, builder]);
+    setPreferredBuilderId(builder.id);
+    setBuilderModalOpen(false);
+    setProjectModalOpen(true);
+  }
+
+  function handleProjectCreated(project) {
+    setAddedProjects((current) => [...current, project]);
+    setProjectId(project.id);
+    setProjectModalOpen(false);
+  }
+
   return (
-    <form onSubmit={handleSubmit} className="grid gap-4">
-      <Card className="grid gap-4">
+    <>
+      <form onSubmit={handleSubmit} className="grid gap-4">
+        <Card className="grid gap-4">
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="flex min-h-28 cursor-pointer flex-col items-center justify-center gap-2 overflow-hidden rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 p-3 text-center text-sm font-bold text-navy">
             {photoPreview ? (
@@ -187,25 +223,61 @@ export function AddLeadForm({ projects = [] }) {
         <PillGroup label="Lead Source" items={sources} value={source} onChange={setSource} />
         <Input label="Budget (₹)" name="budget" type="number" min="0" inputMode="numeric" />
 
-        <div className="grid gap-2">
-          <span className="text-sm font-semibold text-zinc-700">Interested Project</span>
-          <div className="flex flex-wrap gap-2">
-            <Pill active={!projectId} onClick={() => setProjectId("")}>None</Pill>
-            {projects.map((project) => (
-              <Pill key={project.id} active={project.id === projectId} onClick={() => setProjectId(project.id)}>
-                {project.name}
-              </Pill>
-            ))}
+          <div className="grid gap-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-sm font-semibold text-zinc-700">Interested Project</span>
+              <div className="flex gap-2">
+                <Button type="button" size="sm" variant="secondary" onClick={() => setBuilderModalOpen(true)}>
+                  <Building2 size={15} /> Add Builder
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => {
+                    setPreferredBuilderId("");
+                    setProjectModalOpen(true);
+                  }}
+                >
+                  <FolderPlus size={15} /> Add Project
+                </Button>
+              </div>
+            </div>
+            <select
+              value={projectId}
+              onChange={(event) => setProjectId(event.target.value)}
+              className="h-12 w-full rounded-xl border border-zinc-200 bg-white px-4 text-base text-zinc-950 outline-none focus:border-navy focus:ring-4 focus:ring-navy/10"
+            >
+              <option value="">No project selected</option>
+              {availableProjects.map((project) => (
+                <option key={project.id} value={project.id}>
+                  {project.name} - {project.location}
+                </option>
+              ))}
+            </select>
           </div>
-        </div>
 
-        <PillGroup label="Status" items={statuses} value={status} onChange={setStatus} />
-        <Textarea label="Notes" name="notes" placeholder="Requirements, next follow-up, site visit preferences..." />
-      </Card>
-      <Button type="submit" className="w-full" size="lg" disabled={submitting || uploadingPhoto}>
-        <Check size={18} /> {submitting ? "Adding Lead..." : uploadingPhoto ? "Uploading Photo..." : "Add Lead"}
-      </Button>
-    </form>
+          <PillGroup label="Status" items={statuses} value={status} onChange={setStatus} />
+          <Textarea label="Notes" name="notes" placeholder="Requirements, next follow-up, site visit preferences..." />
+        </Card>
+        <Button type="submit" className="w-full" size="lg" disabled={submitting || uploadingPhoto}>
+          <Check size={18} /> {submitting ? "Adding Lead..." : uploadingPhoto ? "Uploading Photo..." : "Add Lead"}
+        </Button>
+      </form>
+
+      <Modal open={builderModalOpen} title="Add Builder" onClose={() => setBuilderModalOpen(false)}>
+        <QuickBuilderForm onCreated={handleBuilderCreated} />
+      </Modal>
+
+      <Modal open={projectModalOpen} title="Add Interested Project" onClose={() => setProjectModalOpen(false)}>
+        <QuickProjectForm
+          key={`${preferredBuilderId}-${projectModalOpen}`}
+          builders={availableBuilders}
+          initialBuilderId={preferredBuilderId}
+          onCreated={handleProjectCreated}
+        />
+      </Modal>
+    </>
   );
 }
 

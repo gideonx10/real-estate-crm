@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Camera, Check } from "lucide-react";
@@ -10,11 +11,16 @@ import { createCRMRecord } from "@/lib/crm-client";
 import { cn } from "@/lib/utils";
 
 const colors = ["#0D1B3E", "#C9A84C", "#22C55E", "#F59E0B", "#3B82F6", "#7C3AED", "#DC2626", "#0F766E"];
+const LocationPicker = dynamic(
+  () => import("@/components/maps/LocationPicker").then((module) => module.LocationPicker),
+  { ssr: false, loading: () => <div className="h-64 animate-pulse rounded-xl bg-zinc-100" /> }
+);
 
 export default function AddBuilderPage() {
   const router = useRouter();
   const [brandColor, setBrandColor] = useState("#0D1B3E");
   const [logoName, setLogoName] = useState("");
+  const [coords, setCoords] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(event) {
@@ -35,6 +41,8 @@ export default function AddBuilderPage() {
         phone: form.get("phone"),
         email: form.get("email"),
         office_address: form.get("office_address"),
+        latitude: coords?.latitude || null,
+        longitude: coords?.longitude || null,
         notes: form.get("notes"),
       });
       router.refresh();
@@ -92,6 +100,11 @@ export default function AddBuilderPage() {
           <Input label="Phone Number*" name="phone" required inputMode="tel" placeholder="+91 98765 43210" />
           <Input label="Email" name="email" type="email" placeholder="builder@example.com" />
           <Textarea label="Office Address" name="office_address" />
+          <div className="grid gap-2">
+            <span className="text-sm font-semibold text-zinc-700">Map Position</span>
+            <LocationPicker coords={coords} onChange={setCoords} />
+            <p className="text-xs font-semibold text-zinc-500">Tap the map to place this builder.</p>
+          </div>
           <Textarea label="Notes" name="notes" />
         </Card>
 

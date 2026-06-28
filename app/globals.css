@@ -1,5 +1,7 @@
 @import "tailwindcss";
 @import "leaflet/dist/leaflet.css";
+@import "react-leaflet-cluster/dist/assets/MarkerCluster.css";
+@import "react-leaflet-cluster/dist/assets/MarkerCluster.Default.css";
 
 :root {
   --background: #f1f5f9;
@@ -69,4 +71,3 @@ textarea {
     transform: scale(1);
   }
 }
-

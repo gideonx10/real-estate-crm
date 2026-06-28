@@ -48,7 +48,7 @@ export default function LoginPage() {
                 name="email"
                 required
                 autoComplete="username"
-                placeholder="admin@axay or gideonx10"
+                placeholder="Enter username"
                 className="h-full min-w-0 rounded-r-xl bg-transparent pr-4 text-base text-zinc-950 outline-none"
               />
             </div>

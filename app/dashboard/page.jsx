@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Building2, Download, FolderPlus, Home, Landmark, UserPlus, UsersRound } from "lucide-react";
@@ -10,6 +11,11 @@ import { StatCard } from "@/components/dashboard/StatCard";
 import { Card } from "@/components/ui/Card";
 import { useCRMData } from "@/lib/use-crm-data";
 import { projectMetrics } from "@/lib/utils";
+
+const PortfolioMapPanel = dynamic(
+  () => import("@/components/projects/PortfolioMapPanel").then((module) => module.PortfolioMapPanel),
+  { ssr: false, loading: () => <div className="h-[520px] animate-pulse rounded-2xl bg-zinc-100" /> }
+);
 
 export default function DashboardPage() {
   const data = useCRMData();
@@ -74,6 +80,7 @@ function DashboardMobile({ data, companyName, metrics, recentLeads }) {
         <MobileStat icon={UsersRound} label="Total Leads" value={data.leads.length} href="/leads" color="text-info" />
       </section>
 
+      <PortfolioOverview data={data} />
       <QuickActionsMobile />
       <ExportCard />
       <RecentLeads data={data} recentLeads={recentLeads} />
@@ -117,10 +124,23 @@ function DashboardDesktop({ data, companyName, metrics, recentLeads }) {
         <StatCard icon={UsersRound} label="Total Leads" value={data.leads.length} href="/leads" color="text-info" />
       </section>
 
+      <PortfolioOverview data={data} />
       <QuickActions />
       <ExportCard />
       <RecentLeads data={data} recentLeads={recentLeads} />
     </div>
+  );
+}
+
+function PortfolioOverview({ data }) {
+  return (
+    <section className="grid gap-3">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-lg font-bold text-navy">India Portfolio Map</h2>
+        <Link href="/projects" className="text-sm font-bold text-gold">Open Projects</Link>
+      </div>
+      <PortfolioMapPanel projects={data.projects} builders={data.builders} />
+    </section>
   );
 }
 
