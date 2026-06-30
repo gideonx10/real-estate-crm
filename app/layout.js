@@ -31,7 +31,7 @@ export const viewport = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className="antialiased">
-      <body className="bg-surface text-zinc-950">
+      <body className="bg-surface text-zinc-950" suppressHydrationWarning>
         <AuthShell>
           <main className="mx-auto min-h-dvh w-full max-w-6xl px-4 pb-28 pt-4 sm:px-6 lg:px-8">
             {children}

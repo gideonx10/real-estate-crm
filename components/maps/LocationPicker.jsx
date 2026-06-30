@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { APIProvider, Map, useMap } from "@vis.gl/react-google-maps";
 import { CenterPin } from "@/components/maps/CenterPin";
+import { ClipboardPasteButton } from "@/components/maps/ClipboardPasteButton";
 import { CurrentLocationButton } from "@/components/maps/CurrentLocationButton";
 import { LocationInfoCard } from "@/components/maps/LocationInfoCard";
 import { PlacesSearchBar } from "@/components/maps/PlacesSearchBar";
@@ -24,19 +25,25 @@ export function LocationPicker({
   const [isDragging, setIsDragging] = useState(false);
   const [pendingCoords, setPendingCoords] = useState(coords ?? null);
   const [panTarget, setPanTarget] = useState(null);
-  const { address, loading: geocoding, reverseGeocode } = useReverseGeocoding();
+  const { address, placeName, verified, loading: geocoding, reverseGeocode } =
+    useReverseGeocoding();
+
+  // Becomes true as soon as the user interacts (drag, search, current-location, paste)
+  // Prevents the initial mount idle from writing coords to the parent
   const hasMoved = useRef(false);
+  const searchBarRef = useRef(null);
 
   const initialCenter = coords
     ? { lat: coords.latitude, lng: coords.longitude }
     : center;
   const initialZoom = coords ? 16 : center === INDIA_CENTER ? 5 : 11;
 
-  // Reverse geocode the existing location when picker first opens
+  // Immediately show address for an existing location when the picker opens
   useEffect(() => {
     if (coords) reverseGeocode(coords.latitude, coords.longitude);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Called when user picks a location from the search bar (text or URL)
   function handleSearchPlace(newCoords) {
     hasMoved.current = true;
     setPanTarget({ lat: newCoords.latitude, lng: newCoords.longitude });
@@ -45,6 +52,7 @@ export function LocationPicker({
     reverseGeocode(newCoords.latitude, newCoords.longitude);
   }
 
+  // Called by the GPS button
   function handleCurrentLocation(newCoords) {
     hasMoved.current = true;
     setPanTarget({ lat: newCoords.latitude, lng: newCoords.longitude });
@@ -53,29 +61,40 @@ export function LocationPicker({
     reverseGeocode(newCoords.latitude, newCoords.longitude);
   }
 
-  // Called when map stops moving — update coords from current map center
+  // Called by the clipboard paste button — delegates to search bar which
+  // handles both Maps URLs and plain text queries
+  function handleClipboardPaste(text) {
+    searchBarRef.current?.processInput(text);
+  }
+
+  // Fires on every map idle (after drag settles, after pan, on initial mount)
   const handleIdle = useCallback(
     (lat, lng) => {
+      // Always reverse geocode if there are coords to resolve (edit mode or after first interaction)
+      const hasCoords = hasMoved.current || !!coords;
+      if (hasCoords) reverseGeocode(lat, lng);
+
+      // Only propagate new coords to the parent after the user has interacted
       if (!hasMoved.current) return;
       const newCoords = { latitude: formatCoord(lat), longitude: formatCoord(lng) };
       setPendingCoords(newCoords);
       onChange(newCoords);
-      reverseGeocode(lat, lng);
     },
-    [onChange, reverseGeocode]
+    [coords, onChange, reverseGeocode]
   );
 
   return (
     <div className="relative isolate rounded-xl border border-zinc-200 bg-white">
       <APIProvider apiKey={MAPS_API_KEY}>
-        {/* Search row — z-10 so autocomplete dropdown floats above the map */}
+        {/* Search row — z-10 keeps the autocomplete dropdown above the map */}
         <div className="relative z-10 flex items-center gap-2 border-b border-zinc-100 bg-white p-2">
           <div className="flex-1">
             <PlacesSearchBar
+              ref={searchBarRef}
               onPlace={handleSearchPlace}
-              placeholder="Search for a location…"
             />
           </div>
+          <ClipboardPasteButton onPaste={handleClipboardPaste} />
           <CurrentLocationButton onLocation={handleCurrentLocation} />
         </div>
 
@@ -104,8 +123,10 @@ export function LocationPicker({
           </div>
           <LocationInfoCard
             address={address}
+            placeName={placeName}
             coords={pendingCoords}
             loading={geocoding}
+            verified={verified}
           />
         </div>
       </APIProvider>
@@ -113,7 +134,7 @@ export function LocationPicker({
   );
 }
 
-// Watches map idle event and reports the center coordinates
+// Watches the map idle event and reports the current center to the parent
 function MapCenterWatcher({ onIdle }) {
   const map = useMap();
   const onIdleRef = useRef(onIdle);
@@ -131,7 +152,7 @@ function MapCenterWatcher({ onIdle }) {
   return null;
 }
 
-// Pans map to a new target whenever it changes (search / current-location triggers)
+// Pans the map to a new target whenever one is set (search / GPS triggers)
 function MapPanTo({ target }) {
   const map = useMap();
 
