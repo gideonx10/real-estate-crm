@@ -19,7 +19,9 @@ const PortfolioMapPanel = dynamic(
     import("@/components/projects/PortfolioMapPanel").then(
       (module) => module.PortfolioMapPanel
     ),
-  { ssr: false, loading: () => <div className="h-130 animate-pulse rounded-2xl bg-zinc-100" /> }
+  { 
+    ssr: false, loading: () => <div className="h-130 animate-pulse rounded-2xl bg-zinc-100" /> 
+  }
 );
 const LocationPicker = dynamic(
   () =>
