@@ -10,11 +10,14 @@ import { RecentLeadRow } from "@/components/dashboard/RecentLeadRow";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { Card } from "@/components/ui/Card";
 import { useCRMData } from "@/lib/use-crm-data";
-import { projectMetrics } from "@/lib/utils";
+import { cn, projectMetrics } from "@/lib/utils";
 
 const PortfolioMapPanel = dynamic(
-  () => import("@/components/projects/PortfolioMapPanel").then((module) => module.PortfolioMapPanel),
-  { ssr: false, loading: () => <div className="h-[520px] animate-pulse rounded-2xl bg-zinc-100" /> }
+  () =>
+    import("@/components/projects/PortfolioMapPanel").then(
+      (module) => module.PortfolioMapPanel
+    ),
+  { ssr: false, loading: () => <div className="h-130 animate-pulse rounded-2xl bg-zinc-100" /> }
 );
 
 export default function DashboardPage() {
@@ -47,8 +50,13 @@ export default function DashboardPage() {
 function DashboardMobile({ data, companyName, metrics, recentLeads }) {
   return (
     <div className="grid w-full max-w-full gap-5 md:hidden">
+      {/* Top bar */}
       <div className="grid grid-cols-[auto_1fr] items-center gap-3">
-        <Link href="/export" className="grid h-10 w-10 place-items-center rounded-xl bg-white text-gold shadow-sm ring-1 ring-zinc-200" aria-label="Export data">
+        <Link
+          href="/export"
+          className="grid h-10 w-10 place-items-center rounded-xl bg-white text-gold shadow-sm ring-1 ring-zinc-200"
+          aria-label="Export data"
+        >
           <Download size={20} />
         </Link>
         <div className="justify-self-end">
@@ -56,10 +64,17 @@ function DashboardMobile({ data, companyName, metrics, recentLeads }) {
         </div>
       </div>
 
+      {/* Banner */}
       <section className="w-full max-w-full rounded-[28px] bg-navy p-4 text-white shadow-lg shadow-navy/15">
         <div className="flex items-center gap-3">
           <div className="grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-2xl bg-white shadow-sm">
-            <Image src="/aakarsh-group-logo.png" alt="Aakarsh Group logo" width={64} height={64} className="h-full w-full object-cover" />
+            <Image
+              src="/aakarsh-group-logo.png"
+              alt="Aakarsh Group logo"
+              width={64}
+              height={64}
+              className="h-full w-full object-cover"
+            />
           </div>
           <div className="min-w-0">
             <p className="truncate text-sm text-white/70">Welcome to {companyName}</p>
@@ -73,15 +88,20 @@ function DashboardMobile({ data, companyName, metrics, recentLeads }) {
         </div>
       </section>
 
-      <section className="grid gap-3">
-        <MobileStat icon={Building2} label="Total Projects" value={data.projects.length} href="/projects" color="text-navy" />
-        <MobileStat icon={Home} label="Available Units" value={metrics.available} href="/projects" color="text-success" />
-        <MobileStat icon={Landmark} label="Sold Units" value={metrics.sold} href="/projects" color="text-gold" />
-        <MobileStat icon={UsersRound} label="Total Leads" value={data.leads.length} href="/leads" color="text-info" />
-      </section>
+      {/* Compact stat strip — much smaller than old tall cards */}
+      <div className="grid grid-cols-4 divide-x divide-zinc-100 overflow-hidden rounded-2xl bg-white ring-1 ring-zinc-200">
+        <CompactStat icon={Building2} label="Projects" value={data.projects.length} color="text-navy" href="/projects" />
+        <CompactStat icon={Home} label="Available" value={metrics.available} color="text-success" href="/projects" />
+        <CompactStat icon={Landmark} label="Sold" value={metrics.sold} color="text-gold" href="/projects" />
+        <CompactStat icon={UsersRound} label="Leads" value={data.leads.length} color="text-info" href="/leads" />
+      </div>
 
-      <PortfolioOverview data={data} />
+      {/* Quick Actions immediately after stats */}
       <QuickActionsMobile />
+
+      {/* Portfolio map */}
+      <PortfolioOverview data={data} />
+
       <ExportCard />
       <RecentLeads data={data} recentLeads={recentLeads} />
     </div>
@@ -92,17 +112,27 @@ function DashboardDesktop({ data, companyName, metrics, recentLeads }) {
   return (
     <div className="hidden gap-6 md:grid">
       <div className="flex items-center justify-end gap-3">
-        <Link href="/export" className="inline-flex h-11 items-center gap-2 rounded-xl bg-white px-4 font-bold text-gold shadow-sm ring-1 ring-zinc-200">
+        <Link
+          href="/export"
+          className="inline-flex h-11 items-center gap-2 rounded-xl bg-white px-4 font-bold text-gold shadow-sm ring-1 ring-zinc-200"
+        >
           <Download size={19} /> Export
         </Link>
         <DashboardAccountActions />
       </div>
 
+      {/* Banner */}
       <section className="rounded-3xl bg-navy p-6 text-white shadow-lg shadow-navy/15">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="grid h-20 w-20 place-items-center overflow-hidden rounded-3xl bg-white shadow-sm">
-              <Image src="/aakarsh-group-logo.png" alt="Aakarsh Group logo" width={80} height={80} className="h-full w-full object-cover" />
+              <Image
+                src="/aakarsh-group-logo.png"
+                alt="Aakarsh Group logo"
+                width={80}
+                height={80}
+                className="h-full w-full object-cover"
+              />
             </div>
             <div>
               <p className="text-lg text-white/70">Welcome to {companyName}</p>
@@ -117,6 +147,7 @@ function DashboardDesktop({ data, companyName, metrics, recentLeads }) {
         </div>
       </section>
 
+      {/* Stat cards */}
       <section className="grid grid-cols-4 gap-4">
         <StatCard icon={Building2} label="Total Projects" value={data.projects.length} href="/projects" color="text-navy" />
         <StatCard icon={Home} label="Available Units" value={metrics.available} href="/projects" color="text-success" />
@@ -124,8 +155,12 @@ function DashboardDesktop({ data, companyName, metrics, recentLeads }) {
         <StatCard icon={UsersRound} label="Total Leads" value={data.leads.length} href="/leads" color="text-info" />
       </section>
 
-      <PortfolioOverview data={data} />
+      {/* Quick Actions right after stats */}
       <QuickActions />
+
+      {/* Portfolio map */}
+      <PortfolioOverview data={data} />
+
       <ExportCard />
       <RecentLeads data={data} recentLeads={recentLeads} />
     </div>
@@ -137,7 +172,9 @@ function PortfolioOverview({ data }) {
     <section className="grid gap-3">
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-lg font-bold text-navy">India Portfolio Map</h2>
-        <Link href="/projects" className="text-sm font-bold text-gold">Open Projects</Link>
+        <Link href="/projects" className="text-sm font-bold text-gold">
+          Open Projects
+        </Link>
       </div>
       <PortfolioMapPanel projects={data.projects} builders={data.builders} />
     </section>
@@ -153,20 +190,13 @@ function BannerStat({ label, value }) {
   );
 }
 
-function MobileStat({ icon: Icon, label, value, href, color = "text-navy" }) {
+function CompactStat({ icon: Icon, label, value, color, href }) {
   return (
-    <Card className="grid min-h-24 grid-cols-[52px_1fr_auto] items-center gap-3">
-      <div className={`grid h-12 w-12 place-items-center rounded-xl bg-current/10 ${color}`}>
-        <Icon size={22} />
-      </div>
-      <div className="min-w-0">
-        <p className="truncate text-base font-bold text-zinc-700">{label}</p>
-        <Link href={href} className={`mt-1 inline-flex items-center gap-1 text-sm font-bold ${color}`}>
-          View all <ArrowRight size={14} />
-        </Link>
-      </div>
-      <span className="text-3xl font-bold text-navy">{value}</span>
-    </Card>
+    <Link href={href} className="grid place-items-center gap-1 py-4 text-center transition hover:bg-zinc-50">
+      <Icon size={18} className={color} />
+      <p className={cn("text-xl font-bold leading-none", color)}>{value}</p>
+      <p className="text-[10px] font-semibold text-zinc-400">{label}</p>
+    </Link>
   );
 }
 
@@ -203,9 +233,14 @@ function ExportCard() {
     <Card className="flex items-center justify-between gap-4">
       <div className="min-w-0">
         <h2 className="font-bold text-navy">Export & Sync</h2>
-        <p className="mt-1 text-sm font-semibold text-zinc-500">Excel / CSV / Google Sheets / Drive</p>
+        <p className="mt-1 text-sm font-semibold text-zinc-500">
+          Excel / CSV / Google Sheets / Drive
+        </p>
       </div>
-      <Link href="/export" className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gold/15 text-gold">
+      <Link
+        href="/export"
+        className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gold/15 text-gold"
+      >
         <ArrowRight size={20} />
       </Link>
     </Card>
@@ -217,7 +252,9 @@ function RecentLeads({ data, recentLeads }) {
     <section className="grid gap-3">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-bold text-navy">Recent Leads</h2>
-        <Link href="/leads" className="text-sm font-bold text-gold">See All</Link>
+        <Link href="/leads" className="text-sm font-bold text-gold">
+          See All
+        </Link>
       </div>
       {recentLeads.map((lead) => (
         <RecentLeadRow

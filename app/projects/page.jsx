@@ -2,8 +2,9 @@
 
 import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
-import { LayoutGrid, Map, Plus, Save } from "lucide-react";
+import { Map, Plus, Save, LayoutGrid } from "lucide-react";
 import { ProjectCard } from "@/components/projects/ProjectCard";
+import { ProjectSearchBar } from "@/components/projects/ProjectSearchBar";
 import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Input, Textarea } from "@/components/ui/Input";
@@ -14,11 +15,15 @@ import { cn } from "@/lib/utils";
 
 const tabs = ["All", "Active", "Upcoming", "Completed"];
 const PortfolioMapPanel = dynamic(
-  () => import("@/components/projects/PortfolioMapPanel").then((module) => module.PortfolioMapPanel),
-  { ssr: false, loading: () => <div className="h-[520px] animate-pulse rounded-2xl bg-zinc-100" /> }
+  () =>
+    import("@/components/projects/PortfolioMapPanel").then(
+      (module) => module.PortfolioMapPanel
+    ),
+  { ssr: false, loading: () => <div className="h-130 animate-pulse rounded-2xl bg-zinc-100" /> }
 );
 const LocationPicker = dynamic(
-  () => import("@/components/maps/LocationPicker").then((module) => module.LocationPicker),
+  () =>
+    import("@/components/maps/LocationPicker").then((module) => module.LocationPicker),
   { ssr: false, loading: () => <div className="h-56 animate-pulse rounded-xl bg-zinc-100" /> }
 );
 
@@ -35,9 +40,18 @@ export default function ProjectsPage() {
 
   const projects = useMemo(() => {
     if (!data) return [];
+    const q = query.trim().toLowerCase();
     return data.projects.filter((project) => {
       const matchesTab = tab === "All" || project.status === tab;
-      const matchesQuery = `${project.name} ${project.location}`.toLowerCase().includes(query.toLowerCase());
+      if (!q) return matchesTab;
+      const builder = data.builders.find((b) => b.id === project.builder_id);
+      const builderName = builder
+        ? (builder.company_name || builder.full_name || "").toLowerCase()
+        : "";
+      const matchesQuery =
+        project.name.toLowerCase().includes(q) ||
+        (project.location || "").toLowerCase().includes(q) ||
+        builderName.includes(q);
       return matchesTab && matchesQuery;
     });
   }, [data, query, tab]);
@@ -90,20 +104,36 @@ export default function ProjectsPage() {
         </Button>
       </header>
 
+      {/* View toggle */}
       <div className="grid grid-cols-2 rounded-xl bg-white p-1 ring-1 ring-zinc-200">
-        <ViewButton active={view === "list"} icon={LayoutGrid} label="Project List" onClick={() => setView("list")} />
-        <ViewButton active={view === "map"} icon={Map} label="Map Overview" onClick={() => setView("map")} />
+        <ViewButton
+          active={view === "list"}
+          icon={LayoutGrid}
+          label="Project List"
+          onClick={() => setView("list")}
+        />
+        <ViewButton
+          active={view === "map"}
+          icon={Map}
+          label="Map Overview"
+          onClick={() => setView("map")}
+        />
       </div>
 
-      {message ? <p className="rounded-xl bg-white px-4 py-3 text-sm font-semibold text-zinc-600">{message}</p> : null}
+      {message ? (
+        <p className="rounded-xl bg-white px-4 py-3 text-sm font-semibold text-zinc-600">
+          {message}
+        </p>
+      ) : null}
 
       {view === "list" ? (
         <>
-          <Input
-            aria-label="Search projects"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search projects..."
+          {/* Grouped suggestion search */}
+          <ProjectSearchBar
+            projects={data.projects}
+            builders={data.builders}
+            query={query}
+            onChange={setQuery}
           />
 
           <div className="flex gap-2 overflow-x-auto pb-1">
@@ -121,7 +151,7 @@ export default function ProjectsPage() {
             ))}
           </div>
 
-          <section className="grid gap-4 lg:grid-cols-2">
+          <section className="grid gap-2">
             {projects.map((project) => (
               <ProjectCard
                 key={project.id}
@@ -143,7 +173,11 @@ export default function ProjectsPage() {
         <PortfolioMapPanel projects={data.projects} builders={data.builders} />
       )}
 
-      <Modal open={!!editingProject} title="Edit Project" onClose={() => !saving && setEditingProject(null)}>
+      <Modal
+        open={!!editingProject}
+        title="Edit Project"
+        onClose={() => !saving && setEditingProject(null)}
+      >
         {editingProject ? (
           <ProjectEditForm
             key={editingProject.id}
@@ -204,8 +238,8 @@ function ProjectEditForm({ project, builders, saving, onSave }) {
         .split(",")
         .map((item) => item.trim())
         .filter(Boolean),
-      latitude: coords?.latitude || null,
-      longitude: coords?.longitude || null,
+      latitude: coords?.latitude ?? null,
+      longitude: coords?.longitude ?? null,
     });
   }
 
@@ -230,8 +264,20 @@ function ProjectEditForm({ project, builders, saving, onSave }) {
         </select>
       </label>
       <div className="grid grid-cols-2 gap-3">
-        <Input label="Price From" name="price_from" type="number" min="0" defaultValue={project.price_from || 0} />
-        <Input label="Price To" name="price_to" type="number" min="0" defaultValue={project.price_to || 0} />
+        <Input
+          label="Price From"
+          name="price_from"
+          type="number"
+          min="0"
+          defaultValue={project.price_from || 0}
+        />
+        <Input
+          label="Price To"
+          name="price_to"
+          type="number"
+          min="0"
+          defaultValue={project.price_to || 0}
+        />
       </div>
       <label className="grid gap-2 text-sm font-semibold text-zinc-700">
         Status
@@ -240,17 +286,25 @@ function ProjectEditForm({ project, builders, saving, onSave }) {
           defaultValue={project.status || "Active"}
           className="h-12 rounded-xl border border-zinc-200 bg-white px-4 text-base outline-none focus:border-navy focus:ring-4 focus:ring-navy/10"
         >
-          {tabs.slice(1).map((status) => <option key={status}>{status}</option>)}
+          {tabs.slice(1).map((status) => (
+            <option key={status}>{status}</option>
+          ))}
         </select>
       </label>
-      <Input label="Amenities" name="amenities" defaultValue={(project.amenities || []).join(", ")} />
+      <Input
+        label="Amenities"
+        name="amenities"
+        defaultValue={(project.amenities || []).join(", ")}
+      />
       <div className="grid gap-2">
         <span className="text-sm font-semibold text-zinc-700">Map Position</span>
         <LocationPicker coords={coords} onChange={setCoords} className="h-56" />
-        <p className="text-xs font-semibold text-zinc-500">Tap the map to set or correct the project position.</p>
+        <p className="text-xs font-semibold text-zinc-500">
+          Drag the map or search to set the project location.
+        </p>
       </div>
       <Button type="submit" size="lg" className="w-full" disabled={saving}>
-        <Save size={18} /> {saving ? "Saving..." : "Save Project"}
+        <Save size={18} /> {saving ? "Saving…" : "Save Project"}
       </Button>
     </form>
   );

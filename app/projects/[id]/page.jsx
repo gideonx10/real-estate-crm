@@ -1,8 +1,14 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { ArrowLeft, Check, Download, Edit3, ExternalLink, FileText, Home, MapPin, Plus, RefreshCw, Trash2, TrendingUp } from "lucide-react";
+
+const LocationPicker = dynamic(
+  () => import("@/components/maps/LocationPicker").then((m) => m.LocationPicker),
+  { ssr: false, loading: () => <div className="h-56 animate-pulse rounded-xl bg-zinc-100" /> }
+);
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -23,6 +29,7 @@ export default function ProjectDetailPage() {
   const [updatingUnitId, setUpdatingUnitId] = useState("");
   const [addUnitOpen, setAddUnitOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [editCoords, setEditCoords] = useState(null);
   const [priceOpen, setPriceOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [brochureMessage, setBrochureMessage] = useState("");
@@ -103,6 +110,15 @@ export default function ProjectDetailPage() {
     }
   }
 
+  function openProjectEdit() {
+    setEditCoords(
+      project.latitude != null && project.longitude != null
+        ? { latitude: Number(project.latitude), longitude: Number(project.longitude) }
+        : null
+    );
+    setEditOpen(true);
+  }
+
   async function updateProjectDetails(event) {
     event.preventDefault();
     if (submitting) return;
@@ -119,6 +135,8 @@ export default function ProjectDetailPage() {
         description: form.get("description"),
         status: form.get("status"),
         amenities,
+        latitude: editCoords?.latitude ?? null,
+        longitude: editCoords?.longitude ?? null,
       });
       setEditOpen(false);
     } finally {
@@ -200,7 +218,7 @@ export default function ProjectDetailPage() {
 
   return (
     <div className="grid gap-5">
-      <Header project={project} builder={builder} onEdit={() => setEditOpen(true)} />
+      <Header project={project} builder={builder} onEdit={openProjectEdit} />
       <ProjectSummary project={project} metrics={metrics} />
       <ProjectDescription project={project} />
       <UnitsSection
@@ -241,7 +259,7 @@ export default function ProjectDetailPage() {
         </form>
       </Modal>
 
-      <Modal open={editOpen} title="Edit Project" onClose={() => setEditOpen(false)}>
+      <Modal open={editOpen} title="Edit Project" onClose={() => !submitting && setEditOpen(false)}>
         <form onSubmit={updateProjectDetails} className="grid gap-4">
           <Input label="Project Name*" name="name" defaultValue={project.name || ""} required />
           <Input label="Location*" name="location" defaultValue={project.location || ""} required />
@@ -253,6 +271,13 @@ export default function ProjectDetailPage() {
             </select>
           </label>
           <Input label="Amenities" name="amenities" defaultValue={(project.amenities || []).join(", ")} placeholder="Gym, Pool, Parking" />
+          <div className="grid gap-2">
+            <span className="text-sm font-semibold text-zinc-700">Map Position</span>
+            <LocationPicker coords={editCoords} onChange={setEditCoords} className="h-56" />
+            <p className="text-xs font-semibold text-zinc-500">
+              Search or tap the map to set or correct this project's location.
+            </p>
+          </div>
           <Button type="submit" size="lg" className="w-full" disabled={submitting}>
             <Check size={18} /> {submitting ? "Saving..." : "Save Project"}
           </Button>
@@ -469,7 +494,7 @@ function UnitCard({ unit, updating, onDelete, onStatus }) {
     <Card className="grid gap-3">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="break-words text-lg font-bold text-navy">{unit.unit_number}</p>
+          <p className="wrap-break-word text-lg font-bold text-navy">{unit.unit_number}</p>
           <p className="text-sm font-semibold text-zinc-500">
             Floor {unit.floor || "N/A"} · {Number(unit.area_sqft || 0).toLocaleString("en-IN")} sqft
           </p>

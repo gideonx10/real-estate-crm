@@ -1,94 +1,88 @@
 import Link from "next/link";
-import { Edit3, MapPin, Trash2 } from "lucide-react";
+import { Edit3, Eye, MapPin, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { formatPrice, projectMetrics } from "@/lib/utils";
+import { formatPrice } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
-const statusBar = {
+const statusDot = {
   Active: "bg-success",
   Upcoming: "bg-info",
   Completed: "bg-zinc-400",
 };
 
+const statusToneMap = {
+  Active: "bg-success/10 text-success",
+  Upcoming: "bg-info/10 text-info",
+  Completed: "bg-zinc-100 text-zinc-500",
+};
+
 export function ProjectCard({ project, builder, units = [], onEdit, onDelete }) {
-  const metrics = projectMetrics(project, units);
+  const dot = statusDot[project.status] || "bg-zinc-300";
+  const toneCls = statusToneMap[project.status] || "bg-zinc-100 text-zinc-500";
+  const priceFrom = project.price_from ? formatPrice(project.price_from) : null;
+  const priceTo = project.price_to ? formatPrice(project.price_to) : null;
+  const priceLabel = priceFrom && priceTo ? `${priceFrom} – ${priceTo}` : priceFrom || priceTo;
 
   return (
-    <Card className="overflow-hidden p-0">
-      <div className={`h-2 ${statusBar[project.status] || "bg-zinc-300"}`} />
-      <div className="p-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <h2 className="truncate text-lg font-bold text-navy">{project.name}</h2>
-            <p className="mt-1 flex items-center gap-1 text-sm text-zinc-500">
-              <MapPin size={15} /> {project.location}
-            </p>
-            <p className="mt-1 text-sm font-semibold text-zinc-500">{builder?.company_name || "No builder assigned"}</p>
-          </div>
-          <Badge>{project.status}</Badge>
-        </div>
+    <Card className="flex items-center gap-3 px-4 py-3.5">
+      {/* Status dot */}
+      <div className={cn("h-2.5 w-2.5 shrink-0 rounded-full", dot)} />
 
-        <div className="mt-4">
-          <div className="mb-2 flex justify-between text-sm font-semibold text-zinc-600">
-            <span>{metrics.percentSold}% sold</span>
-            <span>{formatPrice(project.price_from)} - {formatPrice(project.price_to)}</span>
-          </div>
-          <div className="h-3 overflow-hidden rounded-full bg-gold/30">
-            <div className="h-full rounded-full bg-navy" style={{ width: `${metrics.percentSold}%` }} />
-          </div>
+      {/* Main content */}
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <h2 className="min-w-0 truncate font-bold text-navy">{project.name}</h2>
+          <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold", toneCls)}>
+            {project.status}
+          </span>
         </div>
-
-        <div className="mt-4 grid grid-cols-4 gap-2 text-center">
-          <Metric label="Total" value={metrics.total} />
-          <Metric label="Available" value={metrics.available} className="text-success" />
-          <Metric label="Sold" value={metrics.sold} className="text-info" />
-          <Metric label="Reserved" value={metrics.reserved} className="text-warning" />
-        </div>
-
-        <div className="mt-4 flex min-h-10 items-center justify-between gap-3">
-          <Link href={`/projects/${project.id}`} className="inline-flex font-bold text-gold">
-            View
-          </Link>
-          {onEdit || onDelete ? (
-            <div className="flex gap-2">
-              {onEdit ? (
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="secondary"
-                  aria-label={`Edit ${project.name}`}
-                  title="Edit project"
-                  onClick={() => onEdit(project)}
-                >
-                  <Edit3 size={17} />
-                </Button>
-              ) : null}
-              {onDelete ? (
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="danger"
-                  aria-label={`Delete ${project.name}`}
-                  title="Delete project"
-                  onClick={() => onDelete(project)}
-                >
-                  <Trash2 size={17} />
-                </Button>
-              ) : null}
-            </div>
+        <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-zinc-500">
+          <span className="flex min-w-0 items-center gap-1 truncate">
+            <MapPin size={12} className="shrink-0" />
+            {project.location || "No location"}
+          </span>
+          {builder ? (
+            <span className="shrink-0 font-semibold text-zinc-600">
+              {builder.company_name || builder.full_name}
+            </span>
           ) : null}
         </div>
+        {priceLabel ? (
+          <p className="mt-1 text-sm font-bold text-gold">{priceLabel}</p>
+        ) : null}
+      </div>
+
+      {/* Actions */}
+      <div className="flex shrink-0 items-center gap-1.5">
+        <Link
+          href={`/projects/${project.id}`}
+          aria-label={`View ${project.name}`}
+          className="grid h-8 w-8 place-items-center rounded-lg bg-navy/8 text-navy transition hover:bg-navy/15"
+        >
+          <Eye size={15} />
+        </Link>
+        {onEdit ? (
+          <button
+            type="button"
+            onClick={() => onEdit(project)}
+            aria-label={`Edit ${project.name}`}
+            className="grid h-8 w-8 place-items-center rounded-lg bg-zinc-100 text-zinc-600 transition hover:bg-zinc-200"
+          >
+            <Edit3 size={15} />
+          </button>
+        ) : null}
+        {onDelete ? (
+          <button
+            type="button"
+            onClick={() => onDelete(project)}
+            aria-label={`Delete ${project.name}`}
+            className="grid h-8 w-8 place-items-center rounded-lg bg-red-50 text-red-500 transition hover:bg-red-100"
+          >
+            <Trash2 size={15} />
+          </button>
+        ) : null}
       </div>
     </Card>
-  );
-}
-
-function Metric({ label, value, className = "text-navy" }) {
-  return (
-    <div className="rounded-xl bg-zinc-50 p-2">
-      <p className={`text-lg font-bold ${className}`}>{value}</p>
-      <p className="text-[11px] font-semibold text-zinc-500">{label}</p>
-    </div>
   );
 }

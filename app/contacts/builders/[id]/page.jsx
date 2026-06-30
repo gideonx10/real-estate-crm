@@ -24,6 +24,7 @@ export default function BuilderProfilePage() {
   const [tab, setTab] = useState("All");
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
   const [coords, setCoords] = useState(null);
 
   const builder = useMemo(() => data?.builders.find((item) => item.id === id), [data, id]);
@@ -52,9 +53,16 @@ export default function BuilderProfilePage() {
       ? { latitude: Number(builder.latitude), longitude: Number(builder.longitude) }
       : null);
 
+  function openEdit() {
+    setCoords(null);
+    setSaveError("");
+    setEditing(true);
+  }
+
   async function handleSave(event) {
     event.preventDefault();
     setSaving(true);
+    setSaveError("");
     const form = new FormData(event.currentTarget);
     try {
       await updateCRMRecord("builders", builder.id, {
@@ -66,11 +74,13 @@ export default function BuilderProfilePage() {
         phone: form.get("phone"),
         email: form.get("email"),
         website: form.get("website"),
-        latitude: builderCoords?.latitude || null,
-        longitude: builderCoords?.longitude || null,
+        latitude: builderCoords?.latitude ?? null,
+        longitude: builderCoords?.longitude ?? null,
         notes: form.get("notes"),
       });
       setEditing(false);
+    } catch (error) {
+      setSaveError(error.message || "Unable to save. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -86,7 +96,7 @@ export default function BuilderProfilePage() {
         <div className="w-24" />
       </header>
 
-      <section className="overflow-hidden rounded-3xl bg-gradient-to-br from-navy to-slate-500 text-white shadow-lg shadow-navy/15">
+      <section className="overflow-hidden rounded-3xl bg-linear-to-br from-navy to-slate-500 text-white shadow-lg shadow-navy/15">
         <div className="p-5">
           <div className="grid grid-cols-[76px_1fr] gap-4">
             <div
@@ -119,10 +129,10 @@ export default function BuilderProfilePage() {
             <ProfileAction href={builder.website || "#"} icon={Globe} label="Website" />
             <button
               type="button"
-              onClick={() => setEditing((value) => !value)}
+              onClick={editing ? () => setEditing(false) : openEdit}
               className="grid min-h-14 place-items-center rounded-2xl bg-white/15 px-2 text-sm font-bold"
             >
-              <Edit3 size={22} /> Edit
+              <Edit3 size={22} /> {editing ? "Cancel" : "Edit"}
             </button>
           </div>
         </div>
@@ -152,7 +162,15 @@ export default function BuilderProfilePage() {
               <p className="text-xs font-semibold text-zinc-500">Tap the map to set or correct this builder location.</p>
             </div>
             <Textarea label="Notes" name="notes" defaultValue={builder.notes || ""} />
-            <Button type="submit" disabled={saving}>{saving ? "Saving..." : "Save Details"}</Button>
+            {saveError ? (
+              <p className="rounded-xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">{saveError}</p>
+            ) : null}
+            <div className="grid grid-cols-2 gap-3">
+              <Button type="button" variant="secondary" onClick={() => setEditing(false)} disabled={saving}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={saving}>{saving ? "Saving..." : "Save Details"}</Button>
+            </div>
           </form>
         </Card>
       ) : null}
